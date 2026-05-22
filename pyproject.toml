@@ -1,6 +1,6 @@
 [project]
 name = "ecuas"
-version = "0.1.1"
+version = "0.1.2"
 description = "A family of metrics for principled evaluation of uncertainty-augmented systems"
 readme = "README.md"
 authors = [
@@ -10,7 +10,7 @@ requires-python = "~=3.13.0"
 dependencies = [
     "lightning>=2.6.4",
     "numpy>=2.4.6",
-    "rich>=15.0.0",
+    "rich>=13.0.0",
     "torch>=2.12.0",
     "torch-uncertainty>=0.11.0",
     "torchmetrics>=1.9.0",
