@@ -1,7 +1,7 @@
 [project]
 name = "ecuas"
-version = "0.1.0"
-description = "Expected Cost for Uncertainty-Augmented Systems — metrics for evaluating calibration and selective prediction"
+version = "0.1.1"
+description = "A family of metrics for principled evaluation of uncertainty-augmented systems"
 readme = "README.md"
 authors = [
     { name = "Erik Ernst", email = "erik_ernst@hotmail.com.ar" }

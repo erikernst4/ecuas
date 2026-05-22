@@ -1,6 +1,19 @@
 # ECUAS: Expected Cost for Uncertainty-Augmented Systems
 
-`ecuas` is a Python library containing robust calibration and classification evaluation metrics for Uncertainty-Augmented systems. It implements expected cost metrics, ECE, Brier Score, Cross Entropy, AUC, CCAS, LogLog, and selective prediction metrics under a unified `torchmetrics.Metric` interface.
+`ecuas` is a Python library containing popular calibration and classification evaluation metrics, alongside the principled ECUAS metric family, for Uncertainty-Augmented (UA) systems.
+
+This library implements the **ECUAS_n** metric family described in the paper:
+*[ECUAS_n: A family of metrics for principled evaluation of uncertainty-augmented systems](https://arxiv.org/abs/2605.20490v1)*.
+
+## Background
+
+In high-stakes automated decision-making, access to predictive uncertainty is essential for enabling users to accept or reject predictions based on application-specific cost trade-offs.
+
+Traditional evaluation approaches assess these systems using separate metrics for candidate predictions (e.g., accuracy) and uncertainty scores (e.g., AUC, ECE, Brier Score), or by integrating over risk-coverage curves (e.g., AURC) that ignore probabilistically interpretable uncertainties.
+
+**ECUAS** solves this by providing a unified, decision-theory-based proper scoring rule (PSR) to comprehensively evaluate the task of interest. The parameter **$n$** controls the trade-off between the cost of incorrect predictions and imperfect uncertainties:
+- A small value (e.g., $n=0$) heavily penalizes systems that give high confidence to incorrect answers, suitable for settings where accepting an incorrect answer has severe consequences.
+- A large value (e.g., $n \rightarrow \infty$) acts more like the 0-1 cost error rate, giving milder penalties to confident-but-incorrect predictions.
 
 ## Installation
 
@@ -56,7 +69,7 @@ ece_metric.update(confidences, correctness)
 ece_val = ece_metric.compute()
 print(f"ECE: {ece_val.item():.4f}")
 
-# Confidence n-ECUAS
+# Confidence n-ECUAS (e.g., n=0 to heavily penalize overconfident errors)
 ecuas_metric = ConfidenceECUAS(n=0)
 ecuas_metric.update(confidences, correctness)
 ecuas_val = ecuas_metric.compute()
