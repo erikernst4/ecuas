@@ -2,8 +2,8 @@
 
 `ecuas` is a Python library containing popular calibration and classification evaluation metrics, alongside the principled ECUAS metric family, for Uncertainty-Augmented (UA) systems.
 
-This library implements the **ECUAS_n** metric family described in the paper:
-*[ECUAS_n: A family of metrics for principled evaluation of uncertainty-augmented systems](https://arxiv.org/abs/2605.20490v1)*.
+This library implements the **ECUAS<sub>n</sub>** metric family described in the paper:  
+*[ECUAS<sub>n</sub>: A family of metrics for principled evaluation of uncertainty-augmented systems](https://arxiv.org/abs/2605.20490)*.
 
 ## Background
 
