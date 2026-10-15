@@ -409,27 +409,36 @@ class TestCCAS:
 class TestGammaECUAS:
     """Tests for Gamma-ECUAS metric."""
 
-    def test_high_confidence_abstains(self):
-        """High confidence (s < gamma) triggers abstain, cost = gamma."""
+    def test_high_confidence_answers_correctly(self):
+        """High confidence (s <= gamma) triggers answer, correct → cost = 0."""
         confidences = torch.tensor([0.9])
-        correctness = torch.tensor([True])
-        metric = ConfidenceGammaECUAS(gamma=0.5)
-        metric.update(confidences, correctness)
-        cost = metric.compute().item()
-        assert abs(cost - 0.5) < 1e-6
-
-    def test_low_confidence_answers_correctly(self):
-        """Low confidence (s >= gamma) triggers answer, correct → cost = 0."""
-        confidences = torch.tensor([0.3])
         correctness = torch.tensor([True])
         metric = ConfidenceGammaECUAS(gamma=0.5)
         metric.update(confidences, correctness)
         cost = metric.compute().item()
         assert cost == 0.0
 
-    def test_low_confidence_answers_incorrectly(self):
-        """Low confidence (s >= gamma) triggers answer, incorrect → cost = 1."""
+    def test_high_confidence_answers_incorrectly(self):
+        """High confidence (s <= gamma) triggers answer, incorrect → cost = 1."""
+        confidences = torch.tensor([0.9])
+        correctness = torch.tensor([False])
+        metric = ConfidenceGammaECUAS(gamma=0.5)
+        metric.update(confidences, correctness)
+        cost = metric.compute().item()
+        assert abs(cost - 1.0) < 1e-6
+
+    def test_low_confidence_abstains(self):
+        """Low confidence (s > gamma) triggers abstain, cost = gamma."""
         confidences = torch.tensor([0.3])
+        correctness = torch.tensor([True])
+        metric = ConfidenceGammaECUAS(gamma=0.5)
+        metric.update(confidences, correctness)
+        cost = metric.compute().item()
+        assert abs(cost - 0.5) < 1e-6
+
+    def test_threshold_answers(self):
+        """At s == gamma the candidate answer is accepted."""
+        confidences = torch.tensor([0.5])
         correctness = torch.tensor([False])
         metric = ConfidenceGammaECUAS(gamma=0.5)
         metric.update(confidences, correctness)
@@ -437,33 +446,33 @@ class TestGammaECUAS:
         assert abs(cost - 1.0) < 1e-6
 
     def test_mixed_predictions(self):
-        """Mix of high-confidence (abstain) and low-confidence (answer) samples."""
+        """Mix of high-confidence (answer) and low-confidence (abstain) samples."""
         confidences = torch.tensor([0.9, 0.3, 0.8])
         correctness = torch.tensor([True, False, False])
         metric = ConfidenceGammaECUAS(gamma=0.5)
         metric.update(confidences, correctness)
         cost = metric.compute().item()
-        expected = 2.0 / 3
+        expected = (0.0 + 0.5 + 1.0) / 3
         assert abs(cost - expected) < 1e-5
 
-    def test_all_high_confidence_abstain(self):
-        """All high-confidence → all abstain → cost = gamma."""
+    def test_all_high_confidence_answer(self):
+        """All high-confidence → all answer → cost depends on correctness."""
         confidences = torch.tensor([0.99, 0.95, 0.98])
         correctness = torch.tensor([True, False, True])
         metric = ConfidenceGammaECUAS(gamma=0.5)
         metric.update(confidences, correctness)
         cost = metric.compute().item()
-        assert abs(cost - 0.5) < 1e-6
+        expected = 1.0 / 3
+        assert abs(cost - expected) < 1e-5
 
-    def test_all_low_confidence_answer(self):
-        """All low-confidence → all answer → cost depends on correctness."""
+    def test_all_low_confidence_abstain(self):
+        """All low-confidence → all abstain → cost = gamma."""
         confidences = torch.tensor([0.1, 0.2, 0.3])
         correctness = torch.tensor([True, True, False])
         metric = ConfidenceGammaECUAS(gamma=0.5)
         metric.update(confidences, correctness)
         cost = metric.compute().item()
-        expected = 1.0 / 3
-        assert abs(cost - expected) < 1e-5
+        assert abs(cost - 0.5) < 1e-6
 
     def test_different_gammas_produce_different_results(self):
         """Different gammas shift the abstain/answer boundary."""

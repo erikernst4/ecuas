@@ -212,7 +212,7 @@ class ClassificationLogLog(ClassificationMetric):
 
 
 class ClassificationGammaECUAS(ClassificationMetric):
-    """Gamma-ECUAS (Expected Cost for Uncertainty-Augmented Systems) metric."""
+    """Gamma-ECUAS: rejects at cost gamma when 1 - confidence > gamma, else 0-1 cost."""
 
     def __init__(self, gamma: float = 0.5, epsilon: float = 1e-7, **kwargs):
         super().__init__(**kwargs)
@@ -253,7 +253,7 @@ class ClassificationGammaECUAS(ClassificationMetric):
         self, confidences: torch.Tensor, correctness: torch.Tensor
     ) -> torch.Tensor:
         s = 1.0 - confidences
-        abstain_mask = s < self.gamma
+        abstain_mask = s > self.gamma
         answer_mask = ~abstain_mask
         total_cost = torch.zeros_like(confidences)
         total_cost[abstain_mask] = self.gamma

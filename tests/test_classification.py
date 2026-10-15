@@ -516,14 +516,22 @@ class TestClassificationGammaECUAS:
         # Different gammas should produce different costs
         assert not all(abs(c - costs[0]) < 1e-6 for c in costs[1:])
 
-    def test_all_abstain_at_low_gamma(self, perfect_3class):
-        """With perfect predictions (high confidence), all should abstain when gamma is high."""
+    def test_all_answer_at_low_gamma(self, perfect_3class):
+        """With perfect predictions (high confidence), all are answered even at low gamma."""
         logits, labels = perfect_3class
         m = ClassificationGammaECUAS(gamma=0.01, normalize=False)
         m.update(logits, labels)
         cost = m.compute().item()
-        # All high confidence → all abstain → cost = gamma
-        assert cost == pytest.approx(0.01, abs=1e-4)
+        # All high confidence and correct → all answered → cost = 0
+        assert cost == pytest.approx(0.0, abs=1e-6)
+
+    def test_all_abstain_uniform(self, uniform_3class):
+        """Uniform logits (1 - confidence = 2/3 > gamma) → all abstain → cost = gamma."""
+        logits, labels = uniform_3class
+        m = ClassificationGammaECUAS(gamma=0.5, normalize=False)
+        m.update(logits, labels)
+        cost = m.compute().item()
+        assert cost == pytest.approx(0.5, abs=1e-6)
 
     def test_nan_raises(self):
         m = ClassificationGammaECUAS()
