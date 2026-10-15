@@ -65,7 +65,7 @@ METRICS = OrderedDict(
                 "function": ConfidenceBrierScore.create_shortcut_function(
                     normalize=True
                 ),
-                "cls": ConfidenceBrierScore,
+                "cls": partial(ConfidenceBrierScore, normalize=True),
                 "higher_is_better": False,
                 "display": "BS$^*$",
             },
@@ -87,7 +87,7 @@ METRICS = OrderedDict(
                 "function": ConfidenceCrossEntropy.create_shortcut_function(
                     normalize=True
                 ),
-                "cls": ConfidenceCrossEntropy,
+                "cls": partial(ConfidenceCrossEntropy, normalize=True),
                 "higher_is_better": False,
                 "display": "CE$^*$",
             },

@@ -47,8 +47,6 @@ def _compute_obj(metric, inputs):
     return metric.compute().item()
 
 
-NORMALIZED_CONF_IDS = {"conf_norm_brier", "conf_norm_cross_entropy"}
-
 PARAMETRIZED_IDS = [
     "conf_n-ecuas_n=3",
     "conf_gamma-ecuas_gamma=0.5",
@@ -69,21 +67,7 @@ PARAMETRIZED_IDS = [
 
 
 class TestGetMetricFromId:
-    @pytest.mark.parametrize(
-        "id_name",
-        [
-            pytest.param(
-                k,
-                marks=pytest.mark.xfail(
-                    strict=True,
-                    reason="obj is built as cls() and drops normalize=True",
-                ),
-            )
-            if k in NORMALIZED_CONF_IDS
-            else k
-            for k in sorted(METRICS)
-        ],
-    )
+    @pytest.mark.parametrize("id_name", sorted(METRICS))
     def test_registered_ids(self, id_name, cls_inputs, conf_inputs):
         """Every registered id's function and obj run and agree."""
         metric = get_metric_from_id(id_name)
