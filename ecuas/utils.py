@@ -33,7 +33,7 @@ def get_metric_from_id(id_name):
             nbins = int(id_name.split("_nbins=")[-1])
         return {
             "full_name": f"Confidence ECE (nbins={nbins})",
-            "function": partial(METRICS["conf_ece"]["function"], nbins=nbins),
+            "function": partial(METRICS["conf_ece"]["function"], n_bins=nbins),
             "obj": METRICS["conf_ece"]["cls"](n_bins=nbins),
             "higher_is_better": METRICS["conf_ece"]["higher_is_better"],
             "display": "ECE$^*$" if nbins == 10 else f"ECE(n={nbins})$^*$",
@@ -83,7 +83,7 @@ def get_metric_from_id(id_name):
             nbins = int(id_name.split("_nbins=")[-1])
         return {
             "full_name": f"Classification ECE (nbins={nbins})",
-            "function": partial(METRICS["cls_ece"]["function"], nbins=nbins),
+            "function": partial(METRICS["cls_ece"]["function"], n_bins=nbins),
             "obj": METRICS["cls_ece"]["cls"](n_bins=nbins),
             "higher_is_better": METRICS["cls_ece"]["higher_is_better"],
             "display": "ECE" if nbins == 10 else f"ECE(n={nbins})",
