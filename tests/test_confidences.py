@@ -1,5 +1,6 @@
 """Unit tests for calibration metrics for evaluating confidence predictions."""
 
+import pytest
 import torch
 import numpy as np
 from ecuas import (
@@ -9,6 +10,7 @@ from ecuas import (
     ConfidenceAUCScore,
     CCAS,
     ConfidenceGammaECUAS,
+    ConfidenceAURC,
 )
 
 
@@ -538,6 +540,42 @@ class TestGammaECUAS:
             metric.update(torch.rand(50), (torch.rand(50) > 0.5).float())
             cost = metric.compute().item()
             assert cost >= 0, f"Negative cost at gamma={gamma}"
+
+
+class TestConfidenceAURC:
+    """Tests for the selective risk-coverage AURC of a UA system.
+
+    Samples are accepted in decreasing order of confidence; the risk at
+    coverage k/N is the error rate (error = not correct) of the k accepted ones.
+    """
+
+    @staticmethod
+    def _aurc(confidences, correctness):
+        metric = ConfidenceAURC()
+        metric.update(torch.tensor(confidences), torch.tensor(correctness))
+        return metric.compute().item()
+
+    def test_hand_computed(self):
+        # sorted errors [0, 1, 0] -> risk [0, 1/2, 1/3] at coverage [1/3, 2/3, 1]
+        # trapezoid 2/9, normalized by 1 - 1/3 -> 1/3
+        assert self._aurc([0.9, 0.8, 0.7], [1, 0, 1]) == pytest.approx(1 / 3)
+
+    def test_low_confidence_error_is_accepted_last(self):
+        # the wrong answer has the lowest confidence: risk [0, 0, 1/3] -> 1/12
+        assert self._aurc([0.95, 0.9, 0.05], [1, 1, 0]) == pytest.approx(1 / 12)
+
+    def test_low_confidence_correct_answer_is_not_an_error(self):
+        # all answers correct -> zero risk at every coverage
+        assert self._aurc([0.9, 0.3, 0.1], [1, 1, 1]) == pytest.approx(0.0)
+
+    def test_bool_correctness(self):
+        assert self._aurc([0.95, 0.9, 0.05], [True, True, False]) == pytest.approx(1 / 12)
+
+    def test_invariant_to_confidence_scale_below_half(self):
+        # AURC only depends on the ranking, also for confidences below 0.5
+        assert self._aurc([0.4, 0.3, 0.2], [1, 0, 1]) == pytest.approx(
+            self._aurc([0.9, 0.8, 0.7], [1, 0, 1])
+        )
 
 
 class TestIntegration:

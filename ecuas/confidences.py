@@ -168,9 +168,16 @@ class CCAS(ConfidenceECUAS):
 
 
 class ConfidenceAURC(_AURC, Metric):
+    """Area under the selective risk-coverage curve of a UA system.
+
+    Samples are accepted in decreasing order of confidence, and the risk at
+    coverage k/N is the error rate of the k accepted samples, where an error
+    is an incorrect candidate answer.
+    """
+
     def update(self, confidences: torch.Tensor, correctness: torch.Tensor) -> None:
-        probs = torch.cat([1 - confidences.view(-1, 1), confidences.view(-1, 1)], dim=1)
-        return super().update(probs, correctness.long())
+        self.scores.append(confidences.reshape(-1).float())
+        self.errors.append(1.0 - correctness.reshape(-1).float())
 
 
 class FPR95(_FPRx, Metric):

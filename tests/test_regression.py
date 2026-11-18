@@ -102,7 +102,7 @@ def test_confidence_regression():
         "ConfidenceECUAS": 0.8030088543891907,
         "CCAS": 0.8030088543891907,
         "ConfidenceGammaECUAS": 0.4000000059604645,
-        "ConfidenceAURC": 0.3707531690597534,
+        "ConfidenceAURC": 0.31750911474227905,
         "FPR95": 1.0,
     }
 
