@@ -577,6 +577,35 @@ class TestConfidenceAURC:
             self._aurc([0.9, 0.8, 0.7], [1, 0, 1])
         )
 
+    def test_tie_block_is_averaged(self):
+        # one tie block with mean error 1/2: risk [1/2, 1/2] -> 1/4 / (1 - 1/2)
+        assert self._aurc([0.9, 0.9], [1, 0]) == pytest.approx(0.5)
+        assert self._aurc([0.9, 0.9], [0, 1]) == pytest.approx(0.5)
+
+    def test_tie_block_after_untied_sample(self):
+        # sorted: 0.9 (correct), then a tie block {0.6: wrong, 0.6: correct}
+        # cumulative errors [0, 1/2, 1] -> risk [0, 1/4, 1/3]
+        # trapezoid 1/3 * (1/8 + 7/24) = 5/36, normalized by 2/3 -> 5/24
+        assert self._aurc([0.9, 0.6, 0.6], [1, 0, 1]) == pytest.approx(5 / 24)
+        assert self._aurc([0.6, 0.9, 0.6], [1, 1, 0]) == pytest.approx(5 / 24)
+
+    def test_invariant_to_row_order_with_ties(self):
+        rng = np.random.default_rng(0)
+        confidences = rng.choice([0.2, 0.5, 0.7, 0.9, 0.95], size=300).astype(np.float32)
+        correctness = (rng.random(300) < confidences).astype(np.int64)
+        reference = self._aurc(confidences, correctness)
+        for _ in range(20):
+            perm = rng.permutation(300)
+            assert self._aurc(confidences[perm], correctness[perm]) == pytest.approx(
+                reference, abs=1e-6
+            )
+
+    def test_batched_updates_match_single_update(self):
+        metric = ConfidenceAURC()
+        metric.update(torch.tensor([0.9, 0.6]), torch.tensor([1, 0]))
+        metric.update(torch.tensor([0.6]), torch.tensor([1]))
+        assert metric.compute().item() == pytest.approx(5 / 24)
+
 
 class TestIntegration:
     """Integration tests for all metrics together."""
