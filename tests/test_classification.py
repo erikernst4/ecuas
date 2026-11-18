@@ -578,6 +578,35 @@ class TestClassificationAURC:
         val = fn(logits, labels)
         assert isinstance(val, float) and np.isfinite(val)
 
+    @staticmethod
+    def _aurc(logits, labels):
+        m = ClassificationAURC()
+        m.update(torch.tensor(logits, dtype=torch.float32), torch.tensor(labels))
+        return m.compute().item()
+
+    def test_tie_block_is_averaged(self):
+        # identical logits -> tied confidences; one of the two predictions is wrong
+        # risk [1/2, 1/2] -> 1/4 / (1 - 1/2)
+        assert self._aurc([[1.0, 0.0], [1.0, 0.0]], [0, 1]) == pytest.approx(0.5)
+        assert self._aurc([[1.0, 0.0], [1.0, 0.0]], [1, 0]) == pytest.approx(0.5)
+
+    def test_tie_block_after_untied_sample(self):
+        # sorted: confident correct sample, then a tie block {wrong, correct}
+        # cumulative errors [0, 1/2, 1] -> risk [0, 1/4, 1/3] -> 5/36 / (2/3)
+        logits = [[2.0, 0.0], [1.0, 0.0], [1.0, 0.0]]
+        assert self._aurc(logits, [0, 1, 0]) == pytest.approx(5 / 24)
+        assert self._aurc(logits, [0, 0, 1]) == pytest.approx(5 / 24)
+
+    def test_invariant_to_row_order_with_ties(self):
+        rng = np.random.default_rng(0)
+        templates = np.array([[2.0, 0.0, 0.0], [1.0, 0.5, 0.0], [0.3, 0.2, 0.1]])
+        logits = templates[rng.integers(0, 3, 300)]
+        labels = rng.integers(0, 3, 300)
+        reference = self._aurc(logits, labels)
+        for _ in range(20):
+            perm = rng.permutation(300)
+            assert self._aurc(logits[perm], labels[perm]) == pytest.approx(reference, abs=1e-6)
+
 
 # ──────────────────────────────────────────────────────
 # ClassificationFPR95

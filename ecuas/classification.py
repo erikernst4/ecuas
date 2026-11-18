@@ -1,8 +1,9 @@
 import torch
 import torch.nn.functional as F
 from torchmetrics.classification import BinaryAUROC, MulticlassCalibrationError
-from torch_uncertainty.metrics.classification import AURC as _AURC, FPRx as _FPRx
+from torch_uncertainty.metrics.classification import FPRx as _FPRx
 
+from .aurc import TieAveragedAURC
 from .base import ClassificationMetric, Metric
 
 
@@ -262,7 +263,9 @@ class ClassificationGammaECUAS(ClassificationMetric):
 
 
 # Keep these from torch_uncertainty but add our create_shortcut_function
-class ClassificationAURC(_AURC):
+class ClassificationAURC(TieAveragedAURC):
+    """AURC of the argmax decisions, with risk averaged within confidence ties."""
+
     def update(self, logits: torch.Tensor, labels: torch.Tensor) -> None:
         probs = torch.softmax(logits, dim=1)
         return super().update(probs, labels)
