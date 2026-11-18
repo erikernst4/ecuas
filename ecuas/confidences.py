@@ -1,10 +1,10 @@
 import torch
 from torchmetrics import MeanSquaredError
 from torchmetrics.classification import BinaryCalibrationError, BinaryAUROC
-from torchmetrics.utilities.data import dim_zero_cat
 import torch.nn.functional as F
-from torch_uncertainty.metrics.classification import AURC as _AURC, FPRx as _FPRx
+from torch_uncertainty.metrics.classification import FPRx as _FPRx
 
+from .aurc import TieAveragedAURC
 from .base import ConfidenceMetric, Metric
 
 
@@ -168,48 +168,18 @@ class CCAS(ConfidenceECUAS):
         super().__init__(n=0, *args, **kwargs)
 
 
-class ConfidenceAURC(_AURC, Metric):
+class ConfidenceAURC(TieAveragedAURC, Metric):
     """Area under the selective risk-coverage curve of a UA system.
 
     Samples are accepted in decreasing order of confidence, and the risk at
     coverage k/N is the error rate of the k accepted samples, where an error
-    is an incorrect candidate answer.
-
-    Samples with equal confidence cannot be separated by any threshold, so
-    within a tie block the cumulative error count grows linearly with the
-    block's mean error (the expectation over all orderings of the block).
-    This makes the metric independent of the input order.
+    is an incorrect candidate answer. Risk is averaged within confidence ties
+    (see ``TieAveragedAURC``).
     """
 
     def update(self, confidences: torch.Tensor, correctness: torch.Tensor) -> None:
         self.scores.append(confidences.reshape(-1).float())
         self.errors.append(1.0 - correctness.reshape(-1).float())
-
-    def partial_compute(self) -> torch.Tensor:
-        """Selective risk at coverage k/N for k = 1..N, averaged within ties."""
-        scores = dim_zero_cat(self.scores)
-        errors = dim_zero_cat(self.errors)
-        n = scores.numel()
-        if n == 0:
-            return errors
-        order = scores.argsort(descending=True, stable=True)
-        scores, errors = scores[order], errors[order]
-
-        new_block = torch.ones(n, dtype=torch.bool, device=scores.device)
-        new_block[1:] = scores[1:] != scores[:-1]
-        block = new_block.cumsum(0) - 1
-        n_blocks = int(block[-1]) + 1
-
-        sizes = torch.zeros(n_blocks, dtype=errors.dtype, device=errors.device)
-        sizes.index_add_(0, block, torch.ones_like(errors))
-        block_errors = torch.zeros_like(sizes).index_add_(0, block, errors)
-        errors_before = block_errors.cumsum(0) - block_errors
-        starts = sizes.cumsum(0) - sizes
-
-        k = torch.arange(1, n + 1, dtype=errors.dtype, device=errors.device)
-        position_in_block = k - starts[block]
-        cumulative_errors = errors_before[block] + block_errors[block] / sizes[block] * position_in_block
-        return cumulative_errors / k
 
 
 class FPR95(_FPRx, Metric):
